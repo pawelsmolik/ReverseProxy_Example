@@ -1,10 +1,5 @@
-using System.Net.Http.Headers;
 using IdentityModel.AspNetCore.OAuth2Introspection;
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
-using ReverseProxy_Example;
 using Serilog;
-using Yarp.ReverseProxy.Transforms;
 
 Log.Logger = new LoggerConfiguration()
     .WriteTo.Console()
@@ -32,43 +27,13 @@ try
 
     builder.Services.AddReverseProxy()
         // Initialize the reverse proxy from the "ReverseProxy" section of configuration
-        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"))
-        .AddTransforms(transformBuilderContext =>  // Add transforms inline
-         {
-             // For each route+cluster pair decide if we want to add transforms, and if so, which?
-             // This logic is re-run each time a route is rebuilt.
-
-             // Only do this for routes that require auth.
-
-             /*
-             if (string.Equals("myPolicy", transformBuilderContext.Route.AuthorizationPolicy))
-             {
-                 transformBuilderContext.AddRequestTransform(async transformContext =>
-                 {
-                     // AuthN and AuthZ will have already been completed after request routing.
-                     var ticket = await transformContext.HttpContext.AuthenticateAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-                     var tokenService = transformContext.HttpContext.RequestServices.GetRequiredService<TokenService>();
-                     var token = await tokenService.GetAuthTokenAsync(ticket.Principal);
-
-                     // Reject invalid requests
-                     if (string.IsNullOrEmpty(token))
-                     {
-                         var response = transformContext.HttpContext.Response;
-                         response.StatusCode = 401;
-                         return;
-                     }
-
-                     transformContext.ProxyRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
-                 });
-             }
-             */
-         });
+        .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
 
     builder.Services.AddAuthentication(OAuth2IntrospectionDefaults.AuthenticationScheme)
     .AddOAuth2Introspection(options =>
     {
         options.Authority = "https://localhost:7130";
-        options.ClientId = "WebApiExample";
+        options.ClientId = "ReverseProxy";
         options.ClientSecret = "ABC123";
     });
 
@@ -77,9 +42,9 @@ try
         // Creates a policy called "myPolicy" that depends on having a claim "myCustomClaim" with the value "green".
         // See AccountController.Login method for where this claim is applied to the user identity
         // This policy can then be used by routes in the proxy, see "ClaimsAuthRoute" in appsettings.json
-        //options.AddPolicy("Angular", builder => builder
-            //.RequireClaim("client_Role", "Admin")
-            //.RequireAuthenticatedUser());
+        options.AddPolicy("Angular", builder => builder
+            .RequireClaim("Role", "Admin")
+            .RequireAuthenticatedUser());
 
         // The default policy is to require authentication, but no additional claims
         // Uncommenting the following would have no effect
@@ -87,7 +52,7 @@ try
 
         // FallbackPolicy is used for routes that do not specify a policy in config
         // Make all routes that do not specify a policy to be anonymous (this is the default).
-        //options.FallbackPolicy = null;
+        options.FallbackPolicy = null;
         // Or make all routes that do not specify a policy require some auth:
         // options.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build();
     });
