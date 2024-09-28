@@ -1,4 +1,8 @@
 using IdentityModel.AspNetCore.OAuth2Introspection;
+using OpenTelemetry.Metrics;
+using OpenTelemetry.Resources;
+using OpenTelemetry.Trace;
+using OpenTelemetry.Logs;
 using Serilog;
 
 Log.Logger = new LoggerConfiguration()
@@ -18,6 +22,28 @@ try
             .ReadFrom.Configuration(builder.Configuration)
             .ReadFrom.Services(services)
             .Enrich.FromLogContext());
+
+    const string serviceName = "ReverseProxyExample";
+
+    builder.Logging.AddOpenTelemetry(options =>
+    {
+        options
+            .SetResourceBuilder(
+                ResourceBuilder.CreateDefault()
+                    .AddService(serviceName))
+            .AddConsoleExporter();
+    });
+
+    builder.Services.AddOpenTelemetry()
+          .ConfigureResource(resource => resource.AddService(serviceName))
+          .WithTracing(tracing => tracing
+              .AddAspNetCoreInstrumentation()
+              .AddHttpClientInstrumentation()
+              .AddConsoleExporter()
+              .AddZipkinExporter(opt => opt.Endpoint = new Uri("http://localhost:9411/api/v2/spans")))
+          .WithMetrics(metrics => metrics
+              .AddAspNetCoreInstrumentation()
+              .AddConsoleExporter());
 
     Log.Information("starting server.");
     // Add services to the container.
