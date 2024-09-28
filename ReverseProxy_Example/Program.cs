@@ -58,7 +58,7 @@ try
     builder.Services.AddAuthentication(OAuth2IntrospectionDefaults.AuthenticationScheme)
     .AddOAuth2Introspection(options =>
     {
-        options.Authority = "https://localhost:7130";
+        options.Authority = "https://identityserverexample.azurewebsites.net"; //https://localhost:7130
         options.ClientId = "ReverseProxy";
         options.ClientSecret = "ABC123";
     });
