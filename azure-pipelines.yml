@@ -13,7 +13,7 @@ variables:
   dockerRegistryServiceConnection: 'f6c2a319-50e5-45fa-890e-8191939a4db7'
   imageRepository: 'reverseproxyexample'
   containerRegistry: 'kontenerki.azurecr.io'
-  dockerfilePath: '$(Build.SourcesDirectory)/ReverseProxy_Example/Dockerfile'
+  dockerfilePath: '$(Build.SourcesDirectory)/Dockerfile'
   tag: '$(Build.BuildId)'
 
   # Agent VM image name
